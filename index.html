@@ -12,6 +12,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#162234">
 <link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="alternate" hreflang="es" href="./">
+<link rel="alternate" hreflang="en" href="en/">
 <!-- <link rel="canonical" href="https://www.hotexpress.cl/"> al publicar en el dominio definitivo -->
 
 <!--
@@ -53,6 +55,17 @@
         Acceso Cliente
       </a>
       <a class="btn btn--primary btn--sm" href="#contacto">Contáctanos<span class="btn__ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a>
+      <div class="lang">
+        <button class="lang__btn" type="button" aria-expanded="false" aria-controls="lang-menu" aria-label="Idioma: Español. Cambiar idioma">
+          <svg class="lang__globe" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.3 3.6 5.1 3.6 8.5s-1.2 6.2-3.6 8.5M12 3.5C9.6 5.8 8.4 8.6 8.4 12s1.2 6.2 3.6 8.5"/></svg>
+          <span>ES</span>
+          <svg class="lang__chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+        </button>
+        <ul class="lang__menu" id="lang-menu" hidden>
+          <li><a class="lang__opt" href="#top" lang="es" aria-current="true">Español <b>ES</b></a></li>
+          <li><a class="lang__opt" href="en/" lang="en" hreflang="en">English <b>EN</b></a></li>
+        </ul>
+      </div>
       <button class="burger" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menú"><span></span><span></span></button>
     </div>
   </div>

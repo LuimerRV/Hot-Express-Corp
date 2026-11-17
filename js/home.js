@@ -2,6 +2,10 @@
    Script clásico (sin módulos): funciona publicado y también abriendo index.html con doble clic. */
 (function () {
   'use strict';
+  /* Idioma: la versión en inglés vive en /en/ (html lang="en", data-base="../" para las rutas de imágenes). */
+  var EN = document.documentElement.lang === 'en';
+  var BASE = document.documentElement.getAttribute('data-base') || '';
+  function L(es, en) { return EN ? en : es; }
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var touchLayout = window.matchMedia('(max-width: 1023px)');
 
@@ -55,7 +59,7 @@
     if (!btn || !panel) return;
     function open(on) {
       btn.setAttribute('aria-expanded', String(on));
-      btn.setAttribute('aria-label', on ? 'Cerrar menú' : 'Abrir menú');
+      btn.setAttribute('aria-label', on ? L('Cerrar menú', 'Close menu') : L('Abrir menú', 'Open menu'));
       document.documentElement.style.overflow = on ? 'hidden' : '';
       if (lenis) { if (on) lenis.stop(); else lenis.start(); }
       if (on) {
@@ -130,10 +134,10 @@
     pauseBtn.addEventListener('click', function () {
       userPaused = !userPaused;
       pauseBtn.setAttribute('aria-pressed', String(userPaused));
-      pauseBtn.setAttribute('aria-label', userPaused ? 'Reanudar escenas' : 'Pausar escenas');
+      pauseBtn.setAttribute('aria-label', userPaused ? L('Reanudar escenas', 'Resume slides') : L('Pausar escenas', 'Pause slides'));
       restart();
     });
-    if (userPaused) { pauseBtn.setAttribute('aria-pressed', 'true'); pauseBtn.setAttribute('aria-label', 'Reanudar escenas'); }
+    if (userPaused) { pauseBtn.setAttribute('aria-pressed', 'true'); pauseBtn.setAttribute('aria-label', L('Reanudar escenas', 'Resume slides')); }
 
     // el cursor ya no pausa; solo el foco de teclado (accesibilidad) y el botón de pausa
     root.addEventListener('focusin', function (e) { if (e.target.matches(':focus-visible')) hold(true); });
@@ -174,15 +178,31 @@
       var v = input.value.replace(/\s+/g, '');
       if (!/^[A-Za-z0-9-]{4,30}$/.test(v)) {
         input.setAttribute('aria-invalid', 'true');
-        msg.textContent = 'Escribe el Número de Guía de tu Orden de transporte: solo letras y números, sin espacios.';
+        msg.textContent = L('Escribe el Número de Guía de tu Orden de transporte: solo letras y números, sin espacios.', 'Enter the Guide Number from your Transport Order: letters and numbers only, no spaces.');
         input.focus();
         return;
       }
       if (TRACKING_URL) { window.location.href = TRACKING_URL.replace('{guia}', encodeURIComponent(v)); return; }
-      var subject = encodeURIComponent('Seguimiento guía ' + v);
-      var body = encodeURIComponent('Hola, quisiera conocer el estado de mi envío con Número de Guía ' + v + '.');
-      msg.innerHTML = 'Consulta el estado de la guía <b>' + v + '</b> escribiendo a <a href="mailto:info@hotexpress.cl?subject=' + subject + '&amp;body=' + body + '">info@hotexpress.cl</a> o llamando al <a href="tel:+56224107000">+56 2 2410 7000</a>.';
+      var subject = encodeURIComponent(L('Seguimiento guía ', 'Tracking guide ') + v);
+      var body = encodeURIComponent(L('Hola, quisiera conocer el estado de mi envío con Número de Guía ', 'Hello, I would like to know the status of my shipment with Guide Number ') + v + '.');
+      msg.innerHTML = L('Consulta el estado de la guía <b>', 'Check the status of guide <b>') + v + L('</b> escribiendo a ', '</b> by writing to ') + '<a href="mailto:info@hotexpress.cl?subject=' + subject + '&amp;body=' + body + '">info@hotexpress.cl</a>' + L(' o llamando al ', ' or calling ') + '<a href="tel:+56224107000">+56 2 2410 7000</a>.';
     });
+  })();
+
+  /* ---------------- Selector de idioma ----------------
+     Español en / e inglés en /en/; el idioma actual lleva aria-current y solo cierra el menú. */
+  (function language() {
+    var btn = document.querySelector('.lang__btn'), menu = document.getElementById('lang-menu');
+    if (!btn || !menu) return;
+    function toggle(open) {
+      btn.setAttribute('aria-expanded', String(open));
+      menu.hidden = !open;
+      if (open) { var first = menu.querySelector('a'); if (first) first.focus(); }
+    }
+    btn.addEventListener('click', function () { toggle(menu.hidden); });
+    menu.addEventListener('click', function (e) { var a = e.target.closest('a'); if (a && a.getAttribute('aria-current') === 'true') { e.preventDefault(); toggle(false); btn.focus(); } });
+    document.addEventListener('click', function (e) { if (!menu.hidden && !e.target.closest('.lang')) toggle(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !menu.hidden) { toggle(false); btn.focus(); } });
   })();
 
   /* ---------------- Formulario de contacto ----------------
@@ -201,23 +221,23 @@
       e.preventDefault();
       var v = { nombre: f.nombre.value.trim(), correo: f.correo.value.trim(), mensaje: f.mensaje.value.trim() };
       var bad = null;
-      if (!v.nombre) bad = bad || ['nombre', 'Escribe tu nombre.'];
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo)) bad = bad || ['correo', 'Escribe un correo válido, por ejemplo nombre@empresa.cl.'];
-      if (!v.mensaje) bad = bad || ['mensaje', 'Cuéntanos tu consulta en el mensaje.'];
+      if (!v.nombre) bad = bad || ['nombre', L('Escribe tu nombre.', 'Please enter your name.')];
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo)) bad = bad || ['correo', L('Escribe un correo válido, por ejemplo nombre@empresa.cl.', 'Please enter a valid email, e.g. name@company.com.')];
+      if (!v.mensaje) bad = bad || ['mensaje', L('Cuéntanos tu consulta en el mensaje.', 'Please tell us about your inquiry in the message.')];
       if (bad) { f[bad[0]].setAttribute('aria-invalid', 'true'); f[bad[0]].focus(); msg.textContent = bad[1]; return; }
       var btn = form.querySelector('button[type="submit"]');
       if (CONTACT_ENDPOINT) {
-        btn.disabled = true; msg.textContent = 'Enviando…';
+        btn.disabled = true; msg.textContent = L('Enviando…', 'Sending…');
         fetch(CONTACT_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) })
-          .then(function (r) { if (!r.ok) throw new Error(r.status); form.reset(); msg.textContent = 'Gracias, ' + v.nombre + '. Recibimos tu mensaje y te responderemos a la brevedad.'; })
-          .catch(function () { msg.innerHTML = 'No pudimos enviar el mensaje. Escríbenos a <a href="mailto:info@hotexpress.cl">info@hotexpress.cl</a> o llama al <a href="tel:+56224107000">+56 2 2410 7000</a>.'; })
+          .then(function (r) { if (!r.ok) throw new Error(r.status); form.reset(); msg.textContent = L('Gracias, ', 'Thank you, ') + v.nombre + L('. Recibimos tu mensaje y te responderemos a la brevedad.', '. We received your message and will reply shortly.'); })
+          .catch(function () { msg.innerHTML = L('No pudimos enviar el mensaje. Escríbenos a ', 'We could not send your message. Write to us at ') + '<a href="mailto:info@hotexpress.cl">info@hotexpress.cl</a>' + L(' o llama al ', ' or call ') + '<a href="tel:+56224107000">+56 2 2410 7000</a>.'; })
           .then(function () { btn.disabled = false; });
         return;
       }
-      var subject = encodeURIComponent('Consulta desde hotexpress.cl · ' + v.nombre);
+      var subject = encodeURIComponent(L('Consulta desde hotexpress.cl · ', 'Inquiry from hotexpress.cl · ') + v.nombre);
       var body = encodeURIComponent(v.mensaje + '\n\n' + v.nombre + '\n' + v.correo);
       window.location.href = 'mailto:info@hotexpress.cl?subject=' + subject + '&body=' + body;
-      msg.innerHTML = 'Abrimos tu correo con el mensaje listo. Si no se abrió, escríbenos a <a href="mailto:info@hotexpress.cl">info@hotexpress.cl</a>.';
+      msg.innerHTML = L('Abrimos tu correo con el mensaje listo. Si no se abrió, escríbenos a ', 'We opened your email app with the message ready. If it did not open, write to us at ') + '<a href="mailto:info@hotexpress.cl">info@hotexpress.cl</a>.';
     });
   })();
 
@@ -228,15 +248,15 @@
     var list = document.getElementById('svc-list');
     if (!list) return;
     var S = [
-      { img: 'svc-cargo', f: 'Mar · Aire · Tierra', t: 'Agente de carga global: cargas marítimas LCL y FCL, consolidados aéreos IATA y distribución terrestre en Chile y EE.UU.', alt: 'Terminal portuaria con contenedores y una grúa cargando un buque' },
-      { img: 'svc-vinos', f: 'Ferias · Concursos · Degustaciones', t: 'Transporte de muestras de vino a ferias, concursos y degustaciones, con retiros en Santiago y en las bodegas de las viñas en regiones.', alt: 'Muestras de vino embaladas en una bodega de barricas' },
-      { img: 'svc-embalajes', f: 'Fábrica propia', t: 'Embalajes a medida para vinos y botellas delicadas; estatuas, piezas de arte y antigüedades; y envíos frágiles, voluminosos o de forma irregular.', alt: 'Taller construyendo una caja de madera a medida' },
-      { img: 'svc-bio', f: 'Ambiente · Refrigerado · Congelado', t: 'Muestras biológicas para clínicas, hospitales y laboratorios, enviadas en el primer vuelo disponible.', alt: 'Muestras biológicas en un contenedor refrigerado' },
-      { img: 'svc-importaciones', f: 'Hasta USD 3.000 FOB', t: 'Bodega propia en la terminal Courier del aeropuerto y operador Courier autorizado para importaciones simplificadas.', alt: 'Bodega courier de aeropuerto con carga aérea' },
-      { img: 'svc-peligrosas', f: '9 clases IATA', t: 'Equipo certificado que se actualiza cada año, con embalaje adecuado y coordinación directa con aerolíneas.', alt: 'Bultos con etiquetas de mercancías peligrosas' },
-      { img: 'svc-hotbox', f: 'EE.UU. · Europa · Asia', t: 'Casillas internacionales con compra asistida y despacho a domicilio en todo Chile.', alt: 'Paquetes de compras internacionales en la entrada de una casa' },
-      { img: 'svc-aog', f: '24/7 · 365 días', t: 'Logística urgente de componentes aeronáuticos, con presencia en México, USA, Canadá, América Latina y Europa.', alt: 'Técnicos cargando un componente de motor de avión de noche' },
-      { img: 'svc-especiales', f: 'Más de 30 años', t: 'Instrucciones especiales de entrega, regímenes aduaneros especiales, control de temperatura y manipulación delicada.', alt: 'Caja de madera con equipo delicado suspendida de una grúa' }
+      { img: 'svc-cargo', f: L('Mar · Aire · Tierra', 'Sea · Air · Land'), t: L('Agente de carga global: cargas marítimas LCL y FCL, consolidados aéreos IATA y distribución terrestre en Chile y EE.UU.', 'Global freight forwarder: LCL and FCL ocean cargo, IATA air consolidations and ground distribution in Chile and the USA.'), alt: L('Terminal portuaria con contenedores y una grúa cargando un buque', 'Port terminal with containers and a crane loading a ship') },
+      { img: 'svc-vinos', f: L('Ferias · Concursos · Degustaciones', 'Fairs · Competitions · Tastings'), t: L('Transporte de muestras de vino a ferias, concursos y degustaciones, con retiros en Santiago y en las bodegas de las viñas en regiones.', 'Transport of wine samples to fairs, competitions and tastings, with pickups in Santiago and at wineries across the regions.'), alt: L('Muestras de vino embaladas en una bodega de barricas', 'Wine samples packed in a barrel cellar') },
+      { img: 'svc-embalajes', f: L('Fábrica propia', 'Own factory'), t: L('Embalajes a medida para vinos y botellas delicadas; estatuas, piezas de arte y antigüedades; y envíos frágiles, voluminosos o de forma irregular.', 'Custom packaging for wines and delicate bottles; statues, artwork and antiques; and fragile, bulky or uniquely shaped items.'), alt: L('Taller construyendo una caja de madera a medida', 'Workshop building a custom wooden crate') },
+      { img: 'svc-bio', f: L('Ambiente · Refrigerado · Congelado', 'Ambient · Refrigerated · Frozen'), t: L('Muestras biológicas para clínicas, hospitales y laboratorios, enviadas en el primer vuelo disponible.', 'Biological samples for clinics, hospitals and laboratories, shipped on the first available flight.'), alt: L('Muestras biológicas en un contenedor refrigerado', 'Biological samples in a refrigerated container') },
+      { img: 'svc-importaciones', f: L('Hasta USD 3.000 FOB', 'Up to USD 3,000 FOB'), t: L('Bodega propia en la terminal Courier del aeropuerto y operador Courier autorizado para importaciones simplificadas.', 'Own warehouse in the airport Courier Terminal and authorized Courier Operator for simplified imports.'), alt: L('Bodega courier de aeropuerto con carga aérea', 'Airport courier warehouse with air cargo') },
+      { img: 'svc-peligrosas', f: L('9 clases IATA', '9 IATA classes'), t: L('Equipo certificado que se actualiza cada año, con embalaje adecuado y coordinación directa con aerolíneas.', 'Certified team with yearly training, proper packaging and direct coordination with airlines.'), alt: L('Bultos con etiquetas de mercancías peligrosas', 'Packages with dangerous goods labels') },
+      { img: 'svc-hotbox', f: L('EE.UU. · Europa · Asia', 'USA · Europe · Asia'), t: L('Casillas internacionales con compra asistida y despacho a domicilio en todo Chile.', 'International mailboxes with assisted purchasing and home delivery throughout Chile.'), alt: L('Paquetes de compras internacionales en la entrada de una casa', 'International online purchases at the entrance of a house') },
+      { img: 'svc-aog', f: L('24/7 · 365 días', '24/7 · 365 days'), t: L('Logística urgente de componentes aeronáuticos, con presencia en México, USA, Canadá, América Latina y Europa.', 'Urgent logistics for aeronautical components, with coverage in Mexico, USA, Canada, Latin America and Europe.'), alt: L('Técnicos cargando un componente de motor de avión de noche', 'Technicians loading an aircraft engine component at night') },
+      { img: 'svc-especiales', f: L('Más de 30 años', 'Over 30 years'), t: L('Instrucciones especiales de entrega, regímenes aduaneros especiales, control de temperatura y manipulación delicada.', 'Special delivery instructions, special customs regimes, temperature control and delicate handling.'), alt: L('Caja de madera con equipo delicado suspendida de una grúa', 'Wooden crate with delicate equipment hanging from a crane') }
     ];
     var items = Array.prototype.slice.call(list.querySelectorAll('.idx__item'));
     var rows = items.map(function (li) { return li.querySelector('.idx__row'); });
@@ -254,7 +274,7 @@
       if (cache[k]) return cache[k];
       var im = new Image();
       im.decoding = 'async'; im.alt = ''; im.width = 900; im.height = 672;
-      im.src = 'img/' + S[k].img + '-900.webp';
+      im.src = BASE + 'img/' + S[k].img + '-900.webp';
       ph.insertBefore(im, code);
       cache[k] = im;
       return im;
@@ -286,9 +306,9 @@
       d.className = 'idx__detail';
       var link = rows[k].getAttribute('href');
       var ext = rows[k].getAttribute('target') === '_blank' ? ' target="_blank" rel="noopener"' : '';
-      d.innerHTML = '<img src="img/' + S[k].img + '-900.webp" alt="' + S[k].alt + '" width="900" height="672" loading="lazy">' +
+      d.innerHTML = '<img src="' + BASE + 'img/' + S[k].img + '-900.webp" alt="' + S[k].alt + '" width="900" height="672" loading="lazy">' +
         '<div><b>' + S[k].f + '</b><p>' + S[k].t + '</p>' +
-        (link ? '<a class="btn btn--ghost btn--sm" href="' + link + '"' + ext + '>Ver ' + nameOf(k) + '<span class="btn__ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a>' : '') + '</div>';
+        (link ? '<a class="btn btn--ghost btn--sm" href="' + link + '"' + ext + '>' + L('Ver ', 'View ') + nameOf(k) + '<span class="btn__ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span></a>' : '') + '</div>';
       li.appendChild(d);
       return d;
     }
@@ -375,8 +395,8 @@
       im.className = 'dg__bg';
       im.alt = ''; im.setAttribute('aria-hidden', 'true'); im.decoding = 'async';
       im.sizes = '(orientation: portrait) 180vh, 100vw';
-      im.srcset = 'img/' + key + '-1000.webp 1000w, img/' + key + '-1600.webp 1600w, img/' + key + '-2400.webp 2400w';
-      im.src = 'img/' + key + '-1600.webp';
+      im.srcset = BASE + 'img/' + key + '-1000.webp 1000w, ' + BASE + 'img/' + key + '-1600.webp 1600w, ' + BASE + 'img/' + key + '-2400.webp 2400w';
+      im.src = BASE + 'img/' + key + '-1600.webp';
       first.parentNode.insertBefore(im, first.nextSibling);
       layers[key] = im;
       return im;
